@@ -9,25 +9,11 @@ download_links = []
 
 
 async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
-    """Fetches the HTML content of the link
-
-    Args:
-        session (aiohttp.ClientSession): your aiohttp session
-        link (str): the link to grab the html content from
-
-    Returns:
-        response.text(): html content, as string
-    """
     async with session.get(link) as response:
         return await response.text()
 
 
 async def dwnfile(session: aiohttp.ClientSession, link: str) -> None:
-    """Function to download the music file
-
-    Args:
-        link : the link of the file to be downloaded, also used to determine filename
-    """
     filename = unquote(link.split("/")[6])
     match input(f"Do you want to download |{filename}| y/n/q? ").lower():
         case "y":
@@ -49,8 +35,6 @@ async def dwnfile(session: aiohttp.ClientSession, link: str) -> None:
 
 
 async def main():
-    """Scrape the page and get the download links
-    """
     async with aiohttp.ClientSession(
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"

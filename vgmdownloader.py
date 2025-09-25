@@ -43,7 +43,7 @@ async def main():
         }
     ) as global_session:
         init_html = await fetch_html(global_session, initial_page)
-        init_soup = BeautifulSoup(init_html, "html.parser")
+        init_soup = BeautifulSoup(init_html, "lxml")
         init_td_tags = init_soup.find_all("td", class_="playlistDownloadSong")
         init_a_tags = [a["href"] for td in init_td_tags for a in td.find_all("a")]
 
@@ -51,12 +51,11 @@ async def main():
             down_html = await fetch_html(
                 global_session, urljoin("https://downloads.khinsider.com/", link)
             )
-            down_soup = BeautifulSoup(down_html, "html.parser")
+            down_soup = BeautifulSoup(down_html, "lxml")
 
             for a in down_soup.find_all("a", href=True):
                 if a["href"].endswith(".flac"):
                     download_links.append(a["href"])
-                    print(download_links)
 
 if __name__ == "__main__":
     asyncio.run(main())

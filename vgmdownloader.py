@@ -13,24 +13,26 @@ async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
         return await response.text()
 
 
-async def dwnfile(session: aiohttp.ClientSession, link: str) -> None:
-    filename = unquote(link.split("/")[6])
-    match input(f"Do you want to download |{filename}| y/n/q? ").lower():
-        case "y":
-            print(f"Downloading {filename}")
-            async with session.get(link) as file:
-                file.raise_for_status()
-                with open(filename, "wb") as f:
-                    async for chunk in file.content.iter_chunked(8192):
-                        f.write(chunk)
-                    print("Download completed")
-        case "n":
-            return
-        case "q":
-            raise asyncio.CancelledError()
-        case _:
-            print("Illegal Key Pressed. retry.")
-            await dwnfile(link)
+async def dwnfile() -> None:
+    for link in download_links:
+        filename = unquote(link.split("/")[6])
+        match input(f"Do you want to download |{filename}| y/n/q? ").lower():
+            case "y":
+                print(f"Downloading {filename}")
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(link) as file:
+                        file.raise_for_status()
+                        with open(filename, "wb") as f:
+                            async for chunk in file.content.iter_chunked(8192):
+                                f.write(chunk)
+                            print("Download completed")
+            case "n":
+                return
+            case "q":
+                raise asyncio.CancelledError()
+            case _:
+                print("Illegal Key Pressed. retry.")
+                await dwnfile(link)
 
 
 async def main():
@@ -61,4 +63,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    print(download_links)
+    asyncio.run(dwnfile())

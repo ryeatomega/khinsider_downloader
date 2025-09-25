@@ -88,6 +88,8 @@ if __name__ == "__main__":
         asyncio.run(download_list(down_page_content))
     except asyncio.CancelledError:
         print("Quitting gracefully.")
+        end = time.time()
+        print(end - start)
         exit(0)
     end = time.time()
     print(end - start)

@@ -35,6 +35,7 @@ async def dwnfile(session: aiohttp.ClientSession, link: str) -> None:
 
 
 async def main():
+    global download_links
     async with aiohttp.ClientSession(
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -54,10 +55,11 @@ async def main():
 
                 for a in down_soup.find_all("a", href=True):
                     if a["href"].endswith(".flac"):
-                        await dwnfile(global_session, a["href"])
+                        download_links.append(a["href"])
         except asyncio.CancelledError:
             print("Quitting gracefully.")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+    print(download_links)

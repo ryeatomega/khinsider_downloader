@@ -1,11 +1,18 @@
 import asyncio
+import time
 import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin
 
 # This is the soundtrack you're gonna download, you should go to their website and search for the OST you want.
-initial_page = "https://downloads.khinsider.com/game-soundtracks/album/risk-of-rain-2-survivors-of-the-void-2022"
-download_links = []
+ost_link = "https://downloads.khinsider.com/game-soundtracks/album/risk-of-rain-2-survivors-of-the-void-2022"
+
+
+async def find_flac_link(tags):
+    for tag in tags:
+        href = tag["href"]
+        if href.endswith(".flac"):
+            return href
 
 
 async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
@@ -13,7 +20,7 @@ async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
         return await response.text()
 
 
-async def dwnfile() -> None:
+async def download_list(download_links):
     for link in download_links:
         filename = unquote(link.split("/")[6])
         match input(f"Do you want to download |{filename}| y/n/q? ").lower():
@@ -32,35 +39,55 @@ async def dwnfile() -> None:
                 raise asyncio.CancelledError()
             case _:
                 print("Illegal Key Pressed. retry.")
-                await dwnfile()
+                await download_list()
 
 
-async def main():
-    global download_links
+async def down_page_scrape(init_content):
+    download_links = []
     async with aiohttp.ClientSession(
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
         }
     ) as global_session:
-        init_html = await fetch_html(global_session, initial_page)
-        init_soup = BeautifulSoup(init_html, "lxml")
-        init_td_tags = init_soup.find_all("td", class_="playlistDownloadSong")
-        init_a_tags = [a["href"] for td in init_td_tags for a in td.find_all("a")]
 
-        for link in init_a_tags:
-            down_html = await fetch_html(
-                global_session, urljoin("https://downloads.khinsider.com/", link)
-            )
-            down_soup = BeautifulSoup(down_html, "lxml")
+        async def process(link):
+            down_text = await fetch_html(global_session, link)
+            down_soup = BeautifulSoup(down_text, "lxml")
+            hrefs = down_soup.find_all("a", href=True)
+            return await find_flac_link(hrefs)
 
-            for a in down_soup.find_all("a", href=True):
-                if a["href"].endswith(".flac"):
-                    download_links.append(a["href"])
+        download_links = await asyncio.gather(*(process(link) for link in init_content))
+    return download_links
+
+
+async def init_page_scrape(init_link):
+    async with aiohttp.ClientSession(
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        }
+    ) as global_session:
+        init_html = await fetch_html(global_session, init_link)
+        soup = BeautifulSoup(init_html, "lxml")
+        td_tags = soup.find_all("td", class_="playlistDownloadSong")
+        a_tags = [
+            urljoin("https://downloads.khinsider.com/", a["href"])
+            for td in td_tags
+            for a in td.find_all("a", href=True)
+        ]
+
+        return a_tags
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    start = time.time()
+    init_page_content = asyncio.run(init_page_scrape(ost_link))
+    print(init_page_content)
+    down_page_content = asyncio.run(down_page_scrape(init_page_content))
+    print(down_page_content)
     try:
-        asyncio.run(dwnfile())
+        asyncio.run(download_list(down_page_content))
     except asyncio.CancelledError:
-        print("Quitting gracefully")
+        print("Quitting gracefully.")
         exit(0)
+    end = time.time()
+    print(end - start)

@@ -16,7 +16,7 @@ async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
         link (str): the link to grab the html content from
 
     Returns:
-        _type_: html content, as string
+        response.text(): html content, as string
     """
     async with session.get(link) as response:
         return await response.text()

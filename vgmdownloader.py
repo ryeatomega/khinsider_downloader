@@ -12,6 +12,11 @@ download_links = []
 
 
 def dwnfile(name: str):
+    """Function to download the music file
+
+    Args:
+        name (str): the link of the file to be downloaded, also used to determine filename
+    """
     filename = unquote(name.split("/")[6])
     match input(f"Do you want to download |{filename}| y/n/q?\t").lower():
         case "y":
@@ -32,6 +37,8 @@ def dwnfile(name: str):
 
 
 def main():
+    """Main function. it will scrape the initial page and get the list of songs, and go through each one and uses dwnfile() to download them
+    """
     init_page = session.get(initial_page)
     init_soup = BeautifulSoup(init_page.text, "html.parser")
     init_td_tags = init_soup.find_all("td", class_="playlistDownloadSong")

@@ -56,7 +56,6 @@ async def main():
             for a in down_soup.find_all("a", href=True):
                 if a["href"].endswith(".flac"):
                     download_links.append(a["href"])
-                    print(download_links)
 
 if __name__ == "__main__":
     asyncio.run(main())

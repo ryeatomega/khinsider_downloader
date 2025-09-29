@@ -1,14 +1,13 @@
 import asyncio
-import time
 import aiohttp
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet, Tag
 from urllib.parse import unquote, urljoin
 
 # This is the soundtrack you're gonna download, you should go to their website and search for the OST you want.
 ost_link = "https://downloads.khinsider.com/game-soundtracks/album/risk-of-rain-2-survivors-of-the-void-2022"
 
 
-async def find_flac_link(tags):
+async def find_flac_link(tags: ResultSet[Tag]) -> str:
     for tag in tags:
         href = tag["href"]
         if href.endswith(".flac"):
@@ -20,7 +19,7 @@ async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
         return await response.text()
 
 
-async def download_list(download_links):
+async def download_list(download_links: list[str]) -> None:
     for link in download_links:
         filename = unquote(link.split("/")[6])
         match input(f"Do you want to download |{filename}| y/n/q? ").lower():
@@ -42,7 +41,7 @@ async def download_list(download_links):
                 await download_list()
 
 
-async def down_page_scrape(init_content):
+async def down_page_scrape(init_content: list[str]) -> list[str]:
     download_links = []
     async with aiohttp.ClientSession(
         headers={
@@ -60,7 +59,7 @@ async def down_page_scrape(init_content):
     return download_links
 
 
-async def init_page_scrape(init_link):
+async def init_page_scrape(init_link: str) -> list[str]:
     async with aiohttp.ClientSession(
         headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -79,17 +78,11 @@ async def init_page_scrape(init_link):
 
 
 if __name__ == "__main__":
-    start = time.time()
-    init_page_content = asyncio.run(init_page_scrape(ost_link))
-    print(init_page_content)
-    down_page_content = asyncio.run(down_page_scrape(init_page_content))
+    init_page_content: list[str] = asyncio.run(init_page_scrape(ost_link))
+    down_page_content: list[str] = asyncio.run(down_page_scrape(init_page_content))
     print(down_page_content)
     try:
         asyncio.run(download_list(down_page_content))
     except asyncio.CancelledError:
         print("Quitting gracefully.")
-        end = time.time()
-        print(end - start)
         exit(0)
-    end = time.time()
-    print(end - start)

@@ -55,7 +55,10 @@ async def down_page_scrape(init_content: list[str]) -> list[str]:
             hrefs = down_soup.find_all("a", href=True)
             return await find_flac_link(hrefs)
 
-        download_links = await asyncio.gather(*(process(link) for link in init_content))
+        async with asyncio.TaskGroup() as tg:
+            tasks = [tg.create_task(process(link)) for link in init_content]
+
+    download_links = [task.result() for task in tasks]
     return download_links
 
 

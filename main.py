@@ -14,9 +14,9 @@ async def find_flac_link(tags: ResultSet[Tag]) -> str:
             return href
 
 
-async def fetch_html(session: aiohttp.ClientSession, link: str) -> str:
+async def fetch_html(session: aiohttp.ClientSession, link: str):
     async with session.get(link) as response:
-        return await response.text()
+        return BeautifulSoup(await response.text(), "lxml")
 
 
 async def init_page_scrape(init_link: str) -> list[str]:
@@ -25,8 +25,7 @@ async def init_page_scrape(init_link: str) -> list[str]:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
         }
     ) as global_session:
-        init_html = await fetch_html(global_session, init_link)
-        soup = BeautifulSoup(init_html, "lxml")
+        soup = await fetch_html(global_session, init_link)
         td_tags = soup.select('td.playlistDownloadSong a[href*=".mp3"]')
         a_tags = [
             urljoin("https://downloads.khinsider.com/", a_tag["href"])
@@ -46,8 +45,7 @@ async def down_page_scrape(init_content: list[str]) -> list[str]:
     ) as global_session:
 
         async def process(link):
-            down_text = await fetch_html(global_session, link)
-            down_soup = BeautifulSoup(down_text, "lxml")
+            down_soup = await fetch_html(global_session, link)
             hrefs = down_soup.select("a:has(span.songDownloadLink)")
             return await find_flac_link(hrefs)
 

@@ -11,42 +11,38 @@ async def fetch_html(session: aiohttp.ClientSession, link: str):
 
 
 async def init_page_scrape(client: aiohttp.ClientSession, init_link: str) -> list[str]:
-    print("[INFO] Getting the album page.")
-    async with client as global_session:
-        soup: BeautifulSoup = await fetch_html(global_session, init_link)
-        td_tags: ResultSet = soup.select('td.playlistDownloadSong a[href*=".mp3"]')
-        a_tags = [
-            urljoin("https://downloads.khinsider.com/", td_tag["href"])
-            for td_tag in td_tags
-        ]
-        print(a_tags)
-        return a_tags
+    print("(Stage 1) Getting the album page.")
+    soup: BeautifulSoup = await fetch_html(client, init_link)
+    td_tags: ResultSet = soup.select('td.playlistDownloadSong a[href*=".mp3"]')
+    a_tags = [
+        urljoin("https://downloads.khinsider.com/", td_tag["href"])
+        for td_tag in td_tags
+    ]
+    print(a_tags)
+    return a_tags
 
 
 async def down_page_scrape(
     client: aiohttp.ClientSession,
     init_content: list[str],
 ) -> list[str]:
-    print("[INFO] Getting track links.")
-    async with client as global_session:
+    print("(Stage 2) Getting track links.")
 
-        async def process(link):
-            down_soup = await fetch_html(global_session, link)
-            hrefs = down_soup.select("a:has(span.songDownloadLink)")
-            a = next(
-                (tag["href"] for tag in hrefs if tag["href"].endswith(".mp3")), None
-            )
-            return a
+    async def process(link):
+        down_soup = await fetch_html(client, link)
+        hrefs = down_soup.select("a:has(span.songDownloadLink)")
+        a = next((tag["href"] for tag in hrefs if tag["href"].endswith(".mp3")), None)
+        return a
 
-        async with asyncio.TaskGroup() as tg:
-            tasks: list = [tg.create_task(process(link)) for link in init_content]
+    async with asyncio.TaskGroup() as tg:
+        tasks: list = [tg.create_task(process(link)) for link in init_content]
 
     download_links: list[str] = [task.result() for task in tasks]
     return download_links
 
 
 async def download_list(download_links: list[str]) -> None:
-    print("[INFO] Downloading files.")
+    print("(Stage 3) Downloading files.")
     for link in download_links:
         filename = unquote(link.split("/")[6])
         while True:
@@ -84,7 +80,7 @@ async def main():
                 client, init_page_content
             )
         try:
-            asyncio.run(download_list(down_page_content))
+            await download_list(down_page_content)
         except asyncio.CancelledError:
             print("[INFO] Quitting gracefully.")
             exit(0)
